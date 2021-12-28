@@ -42,13 +42,10 @@ elif args.task == 'task_2_tumor_subtyping':
                             ignore=[])
 
 elif args.task == 'idibell':
-    #args.n_classes=4
-    args.n_classes=3
+    args.n_classes=4
     working_dir = '/home/weismanal/notebook/2021-11-11/testing_clam'
-    #label_dict = {'pole': 0, 'msi': 1, 'lcn': 2, 'p53': 3}
-    label_dict = {'pole': 0, 'lcn': 1, 'p53': 2}
-    #label_col = 'label'
-    label_col = 'label_dummy'
+    label_dict = {'pole': 0, 'msi': 1, 'lcn': 2, 'p53': 3}
+    label_col = 'label'
     dataset = Generic_WSI_Classification_Dataset(csv_path = os.path.join(working_dir, 'data_labels.csv'),
                             shuffle = False, 
                             seed = args.seed, 

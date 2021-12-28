@@ -177,14 +177,11 @@ elif args.task == 'task_2_tumor_subtyping':
         assert args.subtyping 
         
 elif args.task == 'idibell':
-    #args.n_classes=4
-    args.n_classes=3
+    args.n_classes=4
     working_dir = '/home/weismanal/notebook/2021-11-11/testing_clam'
-    dataset_name = 'pinyi'
-    #label_dict = {'pole': 0, 'msi': 1, 'lcn': 2, 'p53': 3}
-    label_dict = {'pole': 0, 'lcn': 1, 'p53': 2}
-    #label_col = 'label'
-    label_col = 'label_dummy'
+    dataset_name = 'bwh_resection'
+    label_dict = {'pole': 0, 'msi': 1, 'lcn': 2, 'p53': 3}
+    label_col = 'label'
     dataset = Generic_MIL_Dataset(csv_path = os.path.join(working_dir, 'data_labels.csv'),
                             data_dir= os.path.join(working_dir, 'results', dataset_name, 'features'),
                             shuffle = False, 
