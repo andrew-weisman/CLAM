@@ -178,7 +178,7 @@ elif args.task == 'task_2_tumor_subtyping':
         
 elif args.task == 'idibell':
     args.n_classes=4
-    working_dir = '/home/weismanal/notebook/2021-11-11/testing_clam'
+    working_dir = '/home/weismanal/projects/idibell/repo'
     dataset_name = 'bwh_resection'
     label_dict = {'pole': 0, 'msi': 1, 'lcn': 2, 'p53': 3}
     label_col = 'label'
