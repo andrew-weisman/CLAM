@@ -18,8 +18,8 @@ import openslide
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 def compute_w_loader(file_path, output_path, wsi, model,
- 	batch_size = 8, verbose = 0, print_every=20, pretrained=True, 
-	custom_downsample=1, target_patch_size=-1):
+	batch_size = 8, verbose = 0, print_every=20, pretrained=True, 
+	custom_downsample=1, target_patch_size=-1, data_augm=0):
 	"""
 	args:
 		file_path: directory of bag (.h5 file)
@@ -30,9 +30,11 @@ def compute_w_loader(file_path, output_path, wsi, model,
 		pretrained: use weights pretrained on imagenet
 		custom_downsample: custom defined downscale factor of image patches
 		target_patch_size: custom defined, rescaled image size before embedding
+		data_augm: flag for type of data augmentation applied to patch
+
+
 	"""
-	dataset = Whole_Slide_Bag_FP(file_path=file_path, wsi=wsi, pretrained=pretrained, 
-		custom_downsample=custom_downsample, target_patch_size=target_patch_size)
+	dataset = Whole_Slide_Bag_FP(file_path=file_path, wsi=wsi, pretrained=pretrained, custom_downsample=custom_downsample, target_patch_size=target_patch_size, data_augm=data_augm)
 	x, y = dataset[0]
 	kwargs = {'num_workers': 4, 'pin_memory': True} if device.type == "cuda" else {}
 	loader = DataLoader(dataset=dataset, batch_size=batch_size, **kwargs, collate_fn=collate_features)
@@ -96,8 +98,9 @@ if __name__ == '__main__':
 	total = len(bags_dataset)
 
 	for bag_candidate_idx in range(total):
-		slide_id = bags_dataset[bag_candidate_idx].split(args.slide_ext)[0]
-		bag_name = slide_id+'.h5'
+		slide_id = bags_dataset[bag_candidate_idx][0].split(args.slide_ext)[0]
+		bag_name = bag_name = slide_id+'.h5'
+		bag_name_out = slide_id+'_'+str(bags_dataset.getAugmentationType(bag_candidate_idx))+'.h5' #added code
 		h5_file_path = os.path.join(args.data_h5_dir, 'patches', bag_name)
 		slide_file_path = os.path.join(args.data_slide_dir, slide_id+args.slide_ext)
 		print('\nprogress: {}/{}'.format(bag_candidate_idx, total))
@@ -107,12 +110,12 @@ if __name__ == '__main__':
 			print('skipped {}'.format(slide_id))
 			continue 
 
-		output_path = os.path.join(args.feat_dir, 'h5_files', bag_name)
+		output_path = os.path.join(args.feat_dir, 'h5_files', bag_name_out)
 		time_start = time.time()
 		wsi = openslide.open_slide(slide_file_path)
 		output_file_path = compute_w_loader(h5_file_path, output_path, wsi, 
 		model = model, batch_size = args.batch_size, verbose = 1, print_every = 20, 
-		custom_downsample=args.custom_downsample, target_patch_size=args.target_patch_size)
+		custom_downsample=args.custom_downsample, target_patch_size=args.target_patch_size, data_augm=bags_dataset.getAugmentationType(bag_candidate_idx))
 		time_elapsed = time.time() - time_start
 		print('\ncomputing features for {} took {} s'.format(output_file_path, time_elapsed))
 		file = h5py.File(output_file_path, "r")
@@ -121,7 +124,7 @@ if __name__ == '__main__':
 		print('features size: ', features.shape)
 		print('coordinates size: ', file['coords'].shape)
 		features = torch.from_numpy(features)
-		bag_base, _ = os.path.splitext(bag_name)
+		bag_base, _ = os.path.splitext(bag_name_out)
 		torch.save(features, os.path.join(args.feat_dir, 'pt_files', bag_base+'.pt'))
 
 

@@ -18,154 +18,190 @@ import h5py
 from random import randrange
 
 def eval_transforms(pretrained=False):
-	if pretrained:
-		mean = (0.485, 0.456, 0.406)
-		std = (0.229, 0.224, 0.225)
+    if pretrained:
+        mean = (0.485, 0.456, 0.406)
+        std = (0.229, 0.224, 0.225)
 
-	else:
-		mean = (0.5,0.5,0.5)
-		std = (0.5,0.5,0.5)
+    else:
+        mean = (0.5,0.5,0.5)
+        std = (0.5,0.5,0.5)
 
-	trnsfrms_val = transforms.Compose(
-					[
-					 transforms.ToTensor(),
-					 transforms.Normalize(mean = mean, std = std)
-					]
-				)
+    trnsfrms_val = transforms.Compose(
+                    [
+                     transforms.ToTensor(),
+                     transforms.Normalize(mean = mean, std = std)
+                    ]
+                )
 
-	return trnsfrms_val
+    return trnsfrms_val
 
 class Whole_Slide_Bag(Dataset):
-	def __init__(self,
-		file_path,
-		pretrained=False,
-		custom_transforms=None,
-		target_patch_size=-1,
-		):
-		"""
-		Args:
-			file_path (string): Path to the .h5 file containing patched data.
-			pretrained (bool): Use ImageNet transforms
-			custom_transforms (callable, optional): Optional transform to be applied on a sample
-		"""
-		self.pretrained=pretrained
-		if target_patch_size > 0:
-			self.target_patch_size = (target_patch_size, target_patch_size)
-		else:
-			self.target_patch_size = None
+    def __init__(self,
+        file_path,
+        pretrained=False,
+        custom_transforms=None,
+        target_patch_size=-1,
+        ):
+        """
+        Args:
+            file_path (string): Path to the .h5 file containing patched data.
+            pretrained (bool): Use ImageNet transforms
+            custom_transforms (callable, optional): Optional transform to be applied on a sample
+        """
+        self.pretrained=pretrained
+        if target_patch_size > 0:
+            self.target_patch_size = (target_patch_size, target_patch_size)
+        else:
+            self.target_patch_size = None
 
-		if not custom_transforms:
-			self.roi_transforms = eval_transforms(pretrained=pretrained)
-		else:
-			self.roi_transforms = custom_transforms
+        if not custom_transforms:
+            self.roi_transforms = eval_transforms(pretrained=pretrained)
+        else:
+            self.roi_transforms = custom_transforms
 
-		self.file_path = file_path
+        self.file_path = file_path
 
-		with h5py.File(self.file_path, "r") as f:
-			dset = f['imgs']
-			self.length = len(dset)
+        with h5py.File(self.file_path, "r") as f:
+            dset = f['imgs']
+            self.length = len(dset)
 
-		self.summary()
-			
-	def __len__(self):
-		return self.length
+        self.summary()
+            
+    def __len__(self):
+        return self.length
 
-	def summary(self):
-		hdf5_file = h5py.File(self.file_path, "r")
-		dset = hdf5_file['imgs']
-		for name, value in dset.attrs.items():
-			print(name, value)
+    def summary(self):
+        hdf5_file = h5py.File(self.file_path, "r")
+        dset = hdf5_file['imgs']
+        for name, value in dset.attrs.items():
+            print(name, value)
 
-		print('pretrained:', self.pretrained)
-		print('transformations:', self.roi_transforms)
-		if self.target_patch_size is not None:
-			print('target_size: ', self.target_patch_size)
+        print('pretrained:', self.pretrained)
+        print('transformations:', self.roi_transforms)
+        if self.target_patch_size is not None:
+            print('target_size: ', self.target_patch_size)
 
-	def __getitem__(self, idx):
-		with h5py.File(self.file_path,'r') as hdf5_file:
-			img = hdf5_file['imgs'][idx]
-			coord = hdf5_file['coords'][idx]
-		
-		img = Image.fromarray(img)
-		if self.target_patch_size is not None:
-			img = img.resize(self.target_patch_size)
-		img = self.roi_transforms(img).unsqueeze(0)
-		return img, coord
+    def __getitem__(self, idx):
+        with h5py.File(self.file_path,'r') as hdf5_file:
+            img = hdf5_file['imgs'][idx]
+            coord = hdf5_file['coords'][idx]
+        
+        img = Image.fromarray(img)
+        if self.target_patch_size is not None:
+            img = img.resize(self.target_patch_size)
+        img = self.roi_transforms(img).unsqueeze(0)
+        return img, coord
 
 class Whole_Slide_Bag_FP(Dataset):
-	def __init__(self,
-		file_path,
-		wsi,
-		pretrained=False,
-		custom_transforms=None,
-		custom_downsample=1,
-		target_patch_size=-1
-		):
-		"""
-		Args:
-			file_path (string): Path to the .h5 file containing patched data.
-			pretrained (bool): Use ImageNet transforms
-			custom_transforms (callable, optional): Optional transform to be applied on a sample
-			custom_downsample (int): Custom defined downscale factor (overruled by target_patch_size)
-			target_patch_size (int): Custom defined image size before embedding
-		"""
-		self.pretrained=pretrained
-		self.wsi = wsi
-		if not custom_transforms:
-			self.roi_transforms = eval_transforms(pretrained=pretrained)
-		else:
-			self.roi_transforms = custom_transforms
+    def __init__(self,
+        file_path,
+        wsi,
+        pretrained=False,
+        custom_transforms=None,
+        custom_downsample=1,
+        target_patch_size=-1,
+        data_augm=0
+        ):
+        """
+        Args:
+            file_path (string): Path to the .h5 file containing patched data.
+            pretrained (bool): Use ImageNet transforms
+            custom_transforms (callable, optional): Optional transform to be applied on a sample
+            custom_downsample (int): Custom defined downscale factor (overruled by target_patch_size)
+            target_patch_size (int): Custom defined image size before embedding
+        """
+        self.pretrained=pretrained
+        self.wsi = wsi
+        self.data_augm=data_augm
+        if not custom_transforms:
+            self.roi_transforms = eval_transforms(pretrained=pretrained)
+        else:
+            self.roi_transforms = custom_transforms
 
-		self.file_path = file_path
+        self.file_path = file_path
 
-		with h5py.File(self.file_path, "r") as f:
-			dset = f['coords']
-			self.patch_level = f['coords'].attrs['patch_level']
-			self.patch_size = f['coords'].attrs['patch_size']
-			self.length = len(dset)
-			if target_patch_size > 0:
-				self.target_patch_size = (target_patch_size, ) * 2
-			elif custom_downsample > 1:
-				self.target_patch_size = (self.patch_size // custom_downsample, ) * 2
-			else:
-				self.target_patch_size = None
-		self.summary()
-			
-	def __len__(self):
-		return self.length
+        with h5py.File(self.file_path, "r") as f:
+            dset = f['coords']
+            self.patch_level = f['coords'].attrs['patch_level']
+            self.patch_size = f['coords'].attrs['patch_size']
+            self.length = len(dset)
+            if target_patch_size > 0:
+                self.target_patch_size = (target_patch_size, ) * 2
+            elif custom_downsample > 1:
+                self.target_patch_size = (self.patch_size // custom_downsample, ) * 2
+            else:
+                self.target_patch_size = None
+            self.summary()
+    
+    def __len__(self):
+        return self.length
 
-	def summary(self):
-		hdf5_file = h5py.File(self.file_path, "r")
-		dset = hdf5_file['coords']
-		for name, value in dset.attrs.items():
-			print(name, value)
+    def readImage_region (self, coord):
+        img = self.wsi.read_region(coord, self.patch_level, (self.patch_size, self.patch_size)).convert('RGB')
+        if self.data_augm==1:
+            return img.transpose(Image.FLIP_LEFT_RIGHT)
+        elif self.data_augm==2:
+            return img.transpose(Image.FLIP_TOP_BOTTOM)
+        elif self.data_augm==3:
+            return img.transpose(Image.ROTATE_90)
+        elif self.data_augm==4:
+            return img.transpose(Image.ROTATE_270)
+        elif self.data_augm==5:
+            w,h=img.size
+            my_zoom=1.5
+            img=img.crop((128-128/my_zoom, 128-128/my_zoom,
+                          128+128/my_zoom,128+128/my_zoom))
+            return img.resize((w,h), Image.LANCZOS)
+        
+        return img
+    
+    def zoom_at(img, x, y, zoom):
+        w, h = img.size
+        zoom2 = zoom * 2
+        img = img.crop((x - w / zoom2, y - h / zoom2, 
+                    x + w / zoom2, y + h / zoom2))
+        return img.resize((w, h), Image.LANCZOS)
+    
+    def summary(self):
+        hdf5_file = h5py.File(self.file_path, "r")
+        dset = hdf5_file['coords']
+        for name, value in dset.attrs.items():
+            print(name, value)
+        print('\nfeature extraction settings')
+        print('target patch size: ', self.target_patch_size)
+        print('pretrained: ', self.pretrained)
+        print('transformations: ', self.roi_transforms)
 
-		print('\nfeature extraction settings')
-		print('target patch size: ', self.target_patch_size)
-		print('pretrained: ', self.pretrained)
-		print('transformations: ', self.roi_transforms)
+        
+    #def readImage_region (self, coord, self.patch_level, (self.patch_size, self.patch_size), data_augm):
+    #    img_raw, self.read_region(coord, self.patch_level, (self.patch_size, self.patch_size)).convert('RGB')
+    #    return img_raw
 
-	def __getitem__(self, idx):
-		with h5py.File(self.file_path,'r') as hdf5_file:
-			coord = hdf5_file['coords'][idx]
-		img = self.wsi.read_region(coord, self.patch_level, (self.patch_size, self.patch_size)).convert('RGB')
-
-		if self.target_patch_size is not None:
-			img = img.resize(self.target_patch_size)
-		img = self.roi_transforms(img).unsqueeze(0)
-		return img, coord
+    
+    def __getitem__(self, idx):
+        with h5py.File(self.file_path,'r') as hdf5_file:
+            coord = hdf5_file['coords'][idx]
+        #img = self.wsi.read_region(coord, self.patch_level, (self.patch_size, self.patch_size)).convert('RGB')
+        img = self.readImage_region(coord)
+        if self.target_patch_size is not None:
+            img = img.resize(self.target_patch_size)
+        img = self.roi_transforms(img).unsqueeze(0)
+        return img, coord
 
 class Dataset_All_Bags(Dataset):
 
-	def __init__(self, csv_path):
-		self.df = pd.read_csv(csv_path)
-	
-	def __len__(self):
-		return len(self.df)
+    def __init__(self, csv_path):
+        self.df = pd.read_csv(csv_path)
+    
+    def __len__(self):
+        return len(self.df)
 
-	def __getitem__(self, idx):
-		return self.df['slide_id'][idx]
+    def getAugmentationType (self, idx):
+        return self.df['data_augm'][idx]
 
+    def __getitem__(self, idx):
+        return self.df['slide_id'][idx], self.df['data_augm'][idx]
 
+    
 
 
