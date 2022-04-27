@@ -93,11 +93,9 @@ elif args.task == 'task_2_tumor_subtyping':
 elif args.task == 'idibell':
     args.n_classes = 4
     working_dir = '/home/weismanal/projects/idibell/repo'
-    dataset_name = 'bwh_resection'
     label_dict = {'pole': 0, 'msi': 1, 'lcn': 2, 'p53': 3}
-    target_resolution_pretty = '41x'
     dataset = Generic_MIL_Dataset(csv_path = os.path.join(working_dir, 'data_labels.csv'),
-                            data_dir= os.path.join(working_dir, 'results', target_resolution_pretty, dataset_name, 'features'),
+                            data_dir= os.path.join(args.data_root_dir, 'features'),
                             shuffle = False, 
                             print_info = True,
                             label_dict = label_dict,
