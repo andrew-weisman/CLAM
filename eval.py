@@ -92,7 +92,7 @@ elif args.task == 'task_2_tumor_subtyping':
 
 elif args.task == 'idibell':
     args.n_classes = 4
-    working_dir = '/home/weismanal/projects/idibell/repo'
+    working_dir = '/data/BIDS-HPC/private/projects/idibell/repo'
     label_dict = {'pole': 0, 'msi': 1, 'lcn': 2, 'p53': 3}
     dataset = Generic_MIL_Dataset(csv_path = os.path.join(working_dir, 'data_labels.csv'),
                             data_dir= os.path.join(args.data_root_dir, 'features'),
